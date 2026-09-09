@@ -5,8 +5,10 @@ import { cars, Car, carsByCategory } from "./data";
 import Image from "next/image";
 
 function getDiscountedPrice(original: number) {
-  const price = original - original * 0.1;/* ลด 10% */
+  // const price = original - original * 0.1;   /* ลด 10% */
   // const price = original - original * 0.15; /* ลด 15% */
+  const price = original * 0.8 * 0.9;         /* ลด 20+10% */
+  // const price = original * 0.8 * 0.85;         /* ลด 20+15% */
   return Math.floor(price);
 }
 
@@ -122,6 +124,60 @@ export default function Home() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const filteredCarsByCategory = Object.fromEntries(
+    Object.entries(carsByCategory)
+      .map(([category, list]) => [
+        category,
+        normalizedSearch
+          ? list.filter(
+              (car) =>
+                car.name.toLowerCase().includes(normalizedSearch) ||
+                car.category.toLowerCase().includes(normalizedSearch)
+            )
+          : list,
+      ])
+      .filter(([, list]) => !normalizedSearch || (list as Car[]).length > 0)
+  ) as typeof carsByCategory;
+
+  useEffect(() => {
+    if (isSearchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [isSearchOpen]);
+
+  /** ตอนโฟกัสช่องค้นหา (โดยเฉพาะมือถือ) หน้าจะเลื่อนไม่ได้ — blur เมื่อเริ่ม scroll */
+  useEffect(() => {
+    if (!isSearchOpen) return;
+
+    const blurSearch = () => {
+      if (document.activeElement === searchInputRef.current) {
+        searchInputRef.current?.blur();
+      }
+    };
+
+    window.addEventListener("touchmove", blurSearch, { passive: true });
+    window.addEventListener("wheel", blurSearch, { passive: true });
+    return () => {
+      window.removeEventListener("touchmove", blurSearch);
+      window.removeEventListener("wheel", blurSearch);
+    };
+  }, [isSearchOpen]);
+
+  /** ค้นหาแล้วกระโดดขึ้นบน เพื่อให้เห็นผลลัพธ์และเลื่อนต่อได้ */
+  useEffect(() => {
+    if (!normalizedSearch) return;
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [normalizedSearch]);
+
+  const closeSearch = () => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+  };
 
   const selectedCars = cars.filter((car: Car) => selected.includes(car.name));
   const total = selectedCars.reduce((sum: number, car: Car) => {
@@ -205,9 +261,9 @@ export default function Home() {
               Forr First
             </h1>
           </div>
-          <p className="text-xl md:text-2xl font-bold text-gray-800 mb-4">
-          {/* 🚗 รถแคช Rebirth ลด 15% 🔥 */}
-          🚗 รถแคช Rebirth🔥
+          <p className="text-xl md:text-3xl font-bold text-gray-800 mb-4">
+          🚗 รถแคช Rebirth ลดสูงสุด 30% 🔥
+          {/* 🚗 รถแคช Rebirth🔥 */}
           </p>
           <div className="max-w-3xl mx-auto space-y-3">
             <p className="text-base md:text-lg text-gray-700 leading-relaxed">
@@ -282,17 +338,59 @@ export default function Home() {
           )}
         </div>
 
-        {/* Mobile Hamburger Button */}
-        <div className="md:hidden mb-6 sticky top-4 z-40">
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-            <span>🚀 เลือก Class</span>
-          </button>
+        {/* Sticky: Class (mobile) หรือ Search (ทุกขนาดเมื่อเปิด) */}
+        <div className={`mb-6 sticky top-4 z-40 ${isSearchOpen ? "" : "md:hidden"}`}>
+          {isSearchOpen ? (
+            <div className="w-full flex items-center gap-2 bg-white rounded-lg shadow-lg border border-blue-200 px-3 py-2.5 sm:px-4 sm:py-3">
+              <svg className="w-5 h-5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                ref={searchInputRef}
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    searchInputRef.current?.blur();
+                  }
+                }}
+                placeholder="ค้นหาชื่อรถ ..."
+                className="flex-1 min-w-0 bg-transparent text-sm sm:text-base text-gray-800 placeholder:text-gray-400 outline-none"
+                enterKeyHint="done"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                  aria-label="ล้างคำค้นหา"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={closeSearch}
+                className="text-xs sm:text-sm font-semibold text-blue-600 px-1.5 py-1 shrink-0"
+              >
+                ปิด
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              <span>🚀 เลือก Class</span>
+            </button>
+          )}
         </div>
 
         {/* Mobile Sidebar */}
@@ -337,7 +435,12 @@ export default function Home() {
 
         {/* Car Categories */}
         <div className="grid gap-8">
-          {Object.entries(carsByCategory).map(([category, list]) => (
+          {normalizedSearch && Object.keys(filteredCarsByCategory).length === 0 ? (
+            <div className="bg-white/90 rounded-2xl shadow-lg border border-blue-200/50 p-8 text-center text-gray-500">
+              ไม่พบรถที่ตรงกับ “{searchQuery.trim()}”
+            </div>
+          ) : null}
+          {Object.entries(filteredCarsByCategory).map(([category, list]) => (
             <div 
               key={category} 
               id={`category-${category}`} 
@@ -373,13 +476,14 @@ export default function Home() {
                             <input
                               type="checkbox"
                               checked={selected.includes(car.name)}
-                              onChange={() =>
+                              onChange={() => {
+                                searchInputRef.current?.blur();
                                 setSelected(prev =>
                                   prev.includes(car.name)
                                     ? prev.filter(n => n !== car.name)
                                     : [...prev, car.name]
-                                )
-                              }
+                                );
+                              }}
                               className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 flex-shrink-0"
                             />
                             <div className="flex-1 min-w-0">
@@ -404,11 +508,11 @@ export default function Home() {
                                 <div className="text-gray-500 line-through text-xs">ปกติ {car.price} บาท</div>
                                 <div className="flex items-center justify-center gap-2 flex-wrap">
                                   {/* ป้าย sale */}
-                                  {/* {car.isSale && (
+                                  {car.isSale && (
                                     <span className="sale-badge inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-gradient-to-r from-rose-300 via-orange-200 to-amber-300 text-rose-800 whitespace-nowrap border border-rose-200/60">
                                       🔥 SALE
                                     </span>
-                                  )} */}
+                                  )}
                                   <span className="text-blue-600 font-semibold text-md">💸{getDisplayPrice(car)} บาท</span>
                                 </div>
                               </div>
@@ -587,6 +691,29 @@ export default function Home() {
 
         {/* Floating Navigation — ขวากลางจอ */}
         <div className="fixed right-4 sm:right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2 sm:gap-3 z-50">
+          {/* Search — ทุกขนาดหน้าจอ เหนือลูกศรขึ้น */}
+          <button
+            type="button"
+            onClick={() => {
+              if (isSearchOpen) closeSearch();
+              else {
+                setIsMenuOpen(false);
+                setIsSearchOpen(true);
+              }
+            }}
+            className={`p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group ${
+              isSearchOpen || searchQuery
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-blue-600 border border-blue-200"
+            }`}
+            title="ค้นหารถ"
+            aria-label={isSearchOpen ? "ปิดค้นหา" : "ค้นหารถ"}
+            aria-expanded={isSearchOpen}
+          >
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
           <button
             onClick={scrollToTop}
             className="bg-blue-600 hover:bg-blue-700 text-white p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group"
