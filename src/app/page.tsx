@@ -180,6 +180,21 @@ export default function Home() {
   };
 
   const selectedCars = cars.filter((car: Car) => selected.includes(car.name));
+  const visibleCarNames = Object.values(filteredCarsByCategory).flatMap((list) =>
+    list.filter((car) => car.type !== "coupon").map((car) => car.name)
+  );
+  const isAllSelected =
+    visibleCarNames.length > 0 &&
+    visibleCarNames.every((name) => selected.includes(name));
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelected([]);
+    } else {
+      setSelected(visibleCarNames);
+    }
+  };
+
   const total = selectedCars.reduce((sum: number, car: Car) => {
     const p = getDisplayPrice(car);
     return sum + (p ?? 0);
@@ -713,6 +728,23 @@ export default function Home() {
             <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
+          </button>
+          <button
+            type="button"
+            onClick={toggleSelectAll}
+            disabled={visibleCarNames.length === 0}
+            className={`p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group text-[10px] sm:text-xs font-bold leading-tight min-w-[2.5rem] sm:min-w-[3rem] disabled:opacity-40 disabled:cursor-not-allowed ${
+              isAllSelected
+                ? "bg-amber-600 hover:bg-amber-700 text-white"
+                : "bg-amber-400 hover:bg-amber-500 text-amber-950"
+            }`}
+            title={isAllSelected ? "ยกเลิกเลือกทั้งหมด" : "เลือกรถทุกคัน (ยกเว้นรถคูปอง)"}
+            aria-label={isAllSelected ? "ยกเลิกเลือกทั้งหมด" : "เลือกรถทุกคัน ยกเว้นรถคูปอง"}
+            aria-pressed={isAllSelected}
+          >
+            <span className="group-hover:scale-110 inline-block transition-transform duration-300">
+              {isAllSelected ? "X" : "Rich"}
+            </span>
           </button>
           <button
             onClick={scrollToTop}
