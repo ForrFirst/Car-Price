@@ -7,8 +7,8 @@ import Image from "next/image";
 function getDiscountedPrice(original: number) {
   // const price = original - original * 0.1;   /* ลด 10% */
   // const price = original - original * 0.15; /* ลด 15% */
-  const price = original * 0.8 * 0.9;         /* ลด 20+10% */
-  // const price = original * 0.8 * 0.85;         /* ลด 20+15% */
+  // const price = original * 0.8 * 0.9;         /* ลด 20+10% */
+  const price = original * 0.8 * 0.85;         /* ลด 20+15% */
   return Math.floor(price);
 }
 
@@ -277,7 +277,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-xl md:text-3xl font-bold text-gray-800 mb-4">
-          🚗 รถแคช Rebirth ลดสูงสุด 30% 🔥
+          🚗 รถแคช Rebirth ลดสูงสุด 35% 🔥
           {/* 🚗 รถแคช Rebirth🔥 */}
           </p>
           <div className="max-w-3xl mx-auto space-y-3">
