@@ -9,10 +9,10 @@ function getDiscountedPrice(original: number) {
   // const price = original - original * 0.15; /* ลด 15% */
   // const price = original * 0.8 * 0.9;         /* ลด 20+10% */
   const price = original * 0.8 * 0.85;         /* ลด 20+15% */
-  return Math.floor(price);
+  return Math.ceil(price);
 }
 
-/** ราคาที่แสดงจริง: ใช้ salePrice ถ้ามี ไม่ใช่ใช้ลด 15% แล้วปัดเศษลง */
+/** ราคาที่แสดงจริง: ใช้ salePrice ถ้ามี ไม่ใช่ใช้ลดแล้วปัดเศษขึ้น */
 function getDisplayPrice(car: Car): number | null {
   if (!car.price) return null;
   return car.salePrice ?? getDiscountedPrice(car.price);
